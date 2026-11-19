@@ -1,10 +1,10 @@
 {
-  "recorded_at": "2026-11-19T13:29:36Z",
+  "recorded_at": "2026-11-19T14:28:47Z",
   "engine_version": "dev",
   "binary": "../ssa-engine/yak-ssa.exe",
   "binary_sha256": "d7e474de9a76a175ed9c92cc7bc3f058013af04bf5e1dea69b00f94f6c154116",
   "golden_set_sha256": "6cea0341f79ec9349614893412f74e327a1262a828019cafa8185ca4c39e4c85",
-  "ssa_qa_commit": "97fd9042a1da22ef5ff7c84975c9731f7d51c350",
+  "ssa_qa_commit": "f52e1ca8d7d367f831d4bb36f9a80ab5edd833a9",
   "verified": true,
   "cases": [
     "java",
