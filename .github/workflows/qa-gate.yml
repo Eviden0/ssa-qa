@@ -1,0 +1,150 @@
+name: qa-gate
+
+# Black-box release gate for the SSA engine (`yak-ssa`). Runs the versioned
+# scan cases against a supplied engine binary and reds the build on any of:
+#   - crash or non-determinism (same binary, repeated runs differ under canon)
+#   - golden drift not covered by allowlist.json (finding/rule-set changes)
+#   - SARIF shape/version break
+#   - per-case performance budget overrun (budgets.json)
+#
+# The engine binary is built in the engine repo (it needs cgo/PCRE2); this repo
+# never builds or imports the engine. Two ways to use it:
+#   * in this repo: workflow_dispatch with a binary_url, or
+#   * from another repo (e.g. the engine repo):
+#       uses: Eviden0/ssa-qa/.github/workflows/qa-gate.yml@main
+#     In a reusable workflow the `github` context is the CALLER's, so
+#     actions/checkout would otherwise land on the caller tree (which has no
+#     cmd/ssa-qa or goldens/). We therefore check out the ssa-qa repo explicitly
+#     (ssa_qa_repo input) into ./ssa-qa and run every step from there. ssa-qa
+#     must be public (or the caller must grant the token access) for this.
+on:
+  workflow_dispatch:
+    inputs:
+      ssa_qa_repo:
+        description: "Repo hosting ssa-qa (owner/name)."
+        required: false
+        default: "Eviden0/ssa-qa"
+      binary_url:
+        description: "URL to download the yak-ssa binary (release asset / CI artifact)."
+        required: true
+      binary_name:
+        description: "Filename to save the binary as."
+        required: false
+        default: yak-ssa
+      expected_version:
+        description: "Optional; fail if `<binary> -v` differs (empty = skip)."
+        required: false
+        default: ""
+  workflow_call:
+    inputs:
+      ssa_qa_repo:
+        required: false
+        type: string
+        default: "Eviden0/ssa-qa"
+      binary_url:
+        required: true
+        type: string
+      binary_name:
+        required: false
+        type: string
+        default: yak-ssa
+      expected_version:
+        required: false
+        type: string
+        default: ""
+    outputs:
+      verified:
+        description: "true when `ssa-qa verify` passed."
+        value: ${{ jobs.gate.outputs.verified }}
+      golden_set_sha256:
+        description: "sha256 of the golden set this run was checked against."
+        value: ${{ jobs.gate.outputs.golden_set_sha256 }}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ssa-qa
+    outputs:
+      verified: ${{ steps.verify.outcome == 'success' }}
+      golden_set_sha256: ${{ steps.goldendigest.outputs.sha }}
+    steps:
+      # Check out the ssa-qa repo itself (NOT the calling repo) so cmd/ssa-qa and
+      # goldens/ exist even when this workflow is invoked from another repo.
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.ssa_qa_repo }}
+          path: ssa-qa
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ssa-qa/go.mod
+          cache: false
+
+      - name: Build ssa-qa
+        run: |
+          set -euo pipefail
+          mkdir -p bin
+          go build -o bin/ssa-qa ./cmd/ssa-qa
+
+      - name: Download engine binary
+        env:
+          BINARY_URL: ${{ inputs.binary_url }}
+          BINARY_NAME: ${{ inputs.binary_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p bin
+          curl -fL --retry 4 --retry-all-errors -o "bin/$BINARY_NAME" "$BINARY_URL"
+          chmod +x "bin/$BINARY_NAME"
+          echo "binary sha256: $(sha256sum "bin/$BINARY_NAME" | awk '{print $1}')"
+
+      - name: Check engine version label
+        if: inputs.expected_version != ''
+        env:
+          BIN: bin/${{ inputs.binary_name }}
+          WANT: ${{ inputs.expected_version }}
+        run: |
+          set -euo pipefail
+          got="$("$BIN" -v 2>/dev/null | awk '{print $NF}' | head -1)"
+          echo "engine version: '${got}' (expected '${WANT}')"
+          if [ "$got" != "$WANT" ]; then
+            echo "::error::engine version mismatch: got '${got}', want '${WANT}'"
+            exit 1
+          fi
+
+      - name: Golden-set digest
+        id: goldendigest
+        run: |
+          set -euo pipefail
+          sha="$( { for f in $(ls goldens/*.json | sort); do \
+                   printf '%s  %s\n' "$(sha256sum "$f" | awk '{print $1}')" "$(basename "$f")"; \
+                 done; } | sha256sum | awk '{print $1}' )"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "golden_set_sha256=$sha"
+
+      - name: ssa-qa verify (gate)
+        id: verify
+        env:
+          BIN: bin/${{ inputs.binary_name }}
+        run: |
+          set +e
+          ./bin/ssa-qa verify --root . --binary "$BIN" | tee verify.log
+          rc=${PIPESTATUS[0]}
+          echo "verify exit=$rc"
+          exit "$rc"
+
+      - name: Upload verify log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssa-qa-verify-log
+          path: ssa-qa/verify.log
+          if-no-files-found: warn

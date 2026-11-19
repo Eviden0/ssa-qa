@@ -74,6 +74,51 @@ dependencies** and builds offline.
   gate to a warning; anything else fails.
 - `budgets.json` — per-case `max_ms`; exceeding it fails `verify`.
 
+## Release manifests & rollback
+
+`scripts/record-release.sh` is the release anchor. It builds `ssa-qa`, runs
+`verify` against a given engine binary, and — only if the gate passes — writes
+`versions/<engine_version>-<binary_sha12>.json` (plus `versions/latest.json`)
+recording everything needed to reproduce or roll back a release:
+
+```
+engine_version, binary (relative path), binary_sha256,
+golden_set_sha256, ssa_qa_commit, verified, cases[]
+```
+
+```bash
+# verify then record; refuses to write a manifest if verify fails
+scripts/record-release.sh --binary /path/to/yak-ssa [--out versions]
+
+# debug a known-bad binary: record it anyway with verified=false
+scripts/record-release.sh --binary /path/to/bad-yak-ssa --allow-fail
+```
+
+**Rollback:** check out the `ssa_qa_commit` named in the manifest (it pins the
+exact goldens), then obtain the engine binary whose `binary_sha256` matches and
+re-run `record-release.sh --binary <that binary>`. It must reproduce
+`verified: true` against the recorded `golden_set_sha256`; a digest mismatch
+means the artifact is not the one that was verified.
+
+## Downstream integration contract (pi-sast)
+
+pi-sast consumes the engine only through the `yak-ssa` binary and its stable
+`irify` JSON / SARIF contract:
+
+1. **Pin by digest.** Select a `versions/*.json` manifest and pin its
+   `binary_sha256`; do not float to "the latest build".
+2. **Gate every upgrade.** Run this gate (`verify`, or `record-release.sh`)
+   against the candidate binary before upgrading. A red gate means canonical
+   output changed — roll back, or, if the change is intended, review it, add an
+   `allowlist.json` reason, and refresh the baseline (`update-golden --confirm`)
+   in a separate reviewed change.
+3. **Key findings by feature hash.** The irify identity `hash` / `Risks` map key
+   is per-run non-deterministic; join findings on
+   `risk_feature_hash + file + line + rule` (what `canon` does), never on the
+   identity hash.
+4. **Production = `verified: true`.** Only manifests recorded with
+   `verified: true` may be pinned in the pipeline.
+
 ## Layout
 
 ```
