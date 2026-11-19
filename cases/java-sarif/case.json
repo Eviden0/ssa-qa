@@ -1,0 +1,9 @@
+{
+  "name": "java-sarif",
+  "language": "java",
+  "corpus": "../../corpus",
+  "format": "sarif",
+  "program": "qa-java-sarif",
+  "memory": true,
+  "runs": 2
+}

@@ -1,0 +1,4 @@
+{
+  "_comment": "Approved canonical changes, keyed by feature hash. An entry lets verify pass a change that would otherwise fail the gate. Always record WHY (engine version bump, intentional rule change, ...).",
+  "risks": []
+}

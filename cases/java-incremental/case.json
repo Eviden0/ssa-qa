@@ -1,0 +1,9 @@
+{
+  "name": "java-incremental",
+  "language": "java",
+  "corpus": "../../corpus",
+  "format": "irify",
+  "program": "qa-java-incremental",
+  "memory": false,
+  "incremental": true
+}

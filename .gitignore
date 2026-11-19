@@ -1,0 +1,7 @@
+# Built harness binary
+/ssa-qa.exe
+/ssa-qa
+*.exe
+
+# Scratch golden dirs from local negative tests
+/.negtest-golden/

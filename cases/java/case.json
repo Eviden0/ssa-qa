@@ -1,0 +1,9 @@
+{
+  "name": "java",
+  "language": "java",
+  "corpus": "../../corpus",
+  "format": "irify",
+  "program": "qa-java",
+  "memory": true,
+  "runs": 3
+}

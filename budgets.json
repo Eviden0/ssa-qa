@@ -1,0 +1,9 @@
+{
+  "_comment": "Per-case wall-clock budgets (milliseconds). Exceeding a budget fails verify. Tune per machine; leave generous headroom for cold caches.",
+  "cases": {
+    "java": { "max_ms": 120000 },
+    "java-sarif": { "max_ms": 120000 },
+    "java-incremental": { "max_ms": 180000 },
+    "java-rules": { "max_ms": 120000 }
+  }
+}

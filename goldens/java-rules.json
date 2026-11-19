@@ -1,0 +1,91 @@
+{
+  "format": "irify",
+  "engine_version": "dev",
+  "language": "",
+  "risks": [
+    {
+      "feature_hash": "1c1d85b7a19d669e16fff1349e746c7d9f0a13c3",
+      "rule_name": "审计Java方法声明中抛出过于宽泛的异常",
+      "risk_type": "exception-handling",
+      "severity": "low",
+      "language": "java",
+      "scan_mode": "struct",
+      "line": 3,
+      "function": "@main",
+      "file": "Sql.java",
+      "cwe": [
+        "CWE-397"
+      ]
+    },
+    {
+      "feature_hash": "1c1d85b7a19d669e16fff1349e746c7d9f0a13c3",
+      "rule_name": "审计Java方法声明中抛出过于宽泛的异常",
+      "risk_type": "exception-handling",
+      "severity": "low",
+      "language": "java",
+      "scan_mode": "struct",
+      "line": 3,
+      "function": "@main",
+      "file": "Ssrf.java",
+      "cwe": [
+        "CWE-397"
+      ]
+    },
+    {
+      "feature_hash": "2756937a04f9a0f3c332a48fad30c6bdbb791a29",
+      "rule_name": "检测Java SQL注入漏洞",
+      "risk_type": "sql-injection",
+      "severity": "middle",
+      "language": "java",
+      "scan_mode": "ssa",
+      "line": 3,
+      "function": "query",
+      "file": "Sql.java",
+      "cwe": [
+        "CWE-89"
+      ]
+    },
+    {
+      "feature_hash": "7020c3666ce26234189b9616ed92c37bfe0f4c9e",
+      "rule_name": "检测Java java.sql Statement查询结果集ResultSet资源未释放",
+      "risk_type": "resource-leak",
+      "severity": "low",
+      "language": "java",
+      "scan_mode": "ssa",
+      "line": 5,
+      "function": "query",
+      "file": "Sql.java",
+      "cwe": [
+        "CWE-772"
+      ]
+    },
+    {
+      "feature_hash": "ad475ef32525c934a5122ec1483edd9155bc8658",
+      "rule_name": "检测Java java.sql 数据库Statement资源未释放",
+      "risk_type": "resource-leak",
+      "severity": "low",
+      "language": "java",
+      "scan_mode": "ssa",
+      "line": 5,
+      "function": "query",
+      "file": "Sql.java",
+      "cwe": [
+        "CWE-772"
+      ]
+    },
+    {
+      "feature_hash": "eb695e1419801dd17b2838a4044d74cfa83c03c0",
+      "rule_name": "检测 Java SQL 语句拼接漏洞",
+      "risk_type": "sql-injection",
+      "severity": "middle",
+      "language": "java",
+      "scan_mode": "ssa",
+      "line": 4,
+      "function": "query",
+      "file": "Sql.java",
+      "cwe": [
+        "CWE-89"
+      ]
+    }
+  ]
+}
