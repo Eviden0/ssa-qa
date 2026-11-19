@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -112,7 +113,19 @@ func (rn Runner) Scan(ctx context.Context, c Case, caseDir, home string) (ScanRe
 	}
 	defer logFile.Close()
 
-	cmd := exec.CommandContext(ectx, rn.Bin, args...)
+	// cmd.Dir switches the child's cwd to caseDir before exec, so a relative
+	// binary path would be re-resolved against cases/<case>/ and fail. Absolutize
+	// anything path-like (including "./yak-ssa"); leave bare names (e.g.
+	// "yak-ssa") intact so PATH lookup still works.
+	bin := rn.Bin
+	if strings.ContainsAny(bin, `/\`) {
+		bin, err = filepath.Abs(bin)
+		if err != nil {
+			return ScanResult{}, err
+		}
+	}
+
+	cmd := exec.CommandContext(ectx, bin, args...)
 	cmd.Dir = caseDir
 	cmd.Env = append(os.Environ(), "YAKIT_HOME="+home)
 	cmd.Stdout = logFile
